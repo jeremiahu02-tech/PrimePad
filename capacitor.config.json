@@ -1,0 +1,10 @@
+{
+  "appId": "com.primeforge.pad",
+  "appName": "Prime Pad",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

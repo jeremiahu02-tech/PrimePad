@@ -1,0 +1,22 @@
+.env
+.env.example
+.env.local
+node_modules
+
+
+# Environment files with secrets
+.env
+
+# Local license files
+license.json
+
+# Python cache & build folders
+__pycache__/
+build/
+dist/
+*.spec
+*.pyc
+
+# Node / mobile build junk
+node_modules/
+android/app/build/

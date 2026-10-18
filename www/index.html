@@ -1,0 +1,3021 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0b0f19">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Mobile Gamepad</title>
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --shell-top: #1c2435;
+            --shell-bottom: #121826;
+            --well: #0a0f19;
+            --text: #e7ecf6;
+            --muted: #7f8ba3;
+            --a: #3fbf5a;
+            --b: #e5484d;
+            --x: #2f8cf0;
+            --y: #f5b300;
+            --xbox: #52e08a;
+            --stick: min(32vh, 18vw);
+            --dcell: min(13.5vh, 8.5vw);
+            --fcell: min(13.5vh, 8.5vw);
+            --xbtn: min(17vh, 11vw);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        html,
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            background-color: #0b0f19;
+            overscroll-behavior: none;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+            color: var(--text);
+        }
+
+        .app {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding:
+                4px max(10px, env(safe-area-inset-right, 0px)) 8px max(10px, env(safe-area-inset-left, 0px));
+        }
+
+        .btn {
+            appearance: none;
+            -webkit-appearance: none;
+            border: 0;
+            margin: 0;
+            padding: 0;
+            font: inherit;
+            color: inherit;
+            background: none;
+            outline: none;
+            cursor: pointer;
+            transition: transform 60ms ease, filter 60ms ease, box-shadow 60ms ease;
+        }
+
+        .btn:focus-visible {
+            box-shadow: 0 0 0 2px var(--xbox);
+        }
+
+        .btn:active,
+        .btn.is-pressed {
+            transform: scale(0.92);
+            filter: brightness(1.35);
+        }
+
+        /* Shoulders */
+        .shoulders {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 0 clamp(6px, 2vw, 18px);
+            flex: 0 0 auto;
+        }
+
+        .shoulder-group {
+            display: flex;
+            gap: clamp(6px, 1.4vw, 12px);
+        }
+
+        .shoulder {
+            width: clamp(56px, 9vw, 78px);
+            height: clamp(24px, 5.2vh, 30px);
+            border-radius: 10px 10px 6px 6px;
+            background: linear-gradient(#263146, #18202f);
+            color: #94a2bd;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 3px 0 #070b12;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Controller shell */
+        .controller {
+            position: relative;
+            flex: 1 1 auto;
+            min-height: 0;
+            margin-top: 4px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 0 clamp(8px, 2vw, 32px);
+            border-radius: clamp(28px, 8vh, 44px);
+            background: linear-gradient(165deg, var(--shell-top), var(--shell-bottom));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                inset 0 -10px 30px rgba(0, 0, 0, 0.35),
+                0 20px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        .zone {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            gap: clamp(10px, 2vw, 20px);
+        }
+
+        .zone-left {
+            justify-content: flex-start;
+            padding-left: 1vw;
+        }
+
+        .zone-right {
+            justify-content: flex-end;
+            padding-right: 1vw;
+        }
+
+        .zone-center {
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* D-pad */
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, var(--dcell));
+            grid-template-rows: repeat(3, var(--dcell));
+            gap: 3px;
+            padding: 6px;
+            border-radius: 18px;
+            background: var(--well);
+            box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.05);
+            flex: 0 0 auto;
+        }
+
+        .dpad-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: linear-gradient(160deg, #243047, #161e2d);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.07),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.45),
+                0 2px 0 #070b12;
+            color: #8fa0bd;
+            font-size: calc(var(--dcell) * 0.28);
+        }
+
+        .dpad-btn.up {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .dpad-btn.left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .dpad-btn.right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .dpad-btn.down {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .dpad-core {
+            grid-column: 2;
+            grid-row: 2;
+            border-radius: 50%;
+            background: #0d131f;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Analog sticks */
+        .stick {
+            position: relative;
+            flex: 0 0 auto;
+            width: var(--stick);
+            height: var(--stick);
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 35%, #161e2e, #0b1019 72%);
+            box-shadow:
+                inset 0 6px 14px rgba(0, 0, 0, 0.65),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+                0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .stick::before {
+            content: "";
+            position: absolute;
+            inset: 12%;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.05);
+            pointer-events: none;
+        }
+
+        .stick-knob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 46%;
+            height: 46%;
+            border-radius: 50%;
+            transform: translate(calc(-50% + var(--kx, 0px)),
+                    calc(-50% + var(--ky, 0px)));
+            background: radial-gradient(circle at 36% 30%, #6b7993, #2a3446 62%, #1c2432);
+            box-shadow:
+                0 8px 16px rgba(0, 0, 0, 0.55),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .stick.is-active .stick-knob {
+            box-shadow:
+                0 6px 18px rgba(0, 0, 0, 0.5),
+                0 0 0 2px rgba(82, 224, 138, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22);
+        }
+
+        /* Center system controls */
+        .system-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pill {
+            width: clamp(44px, 6vw, 58px);
+            height: clamp(20px, 4.6vh, 24px);
+            border-radius: 999px;
+            background: linear-gradient(#222c3f, #161e2c);
+            color: #9aa8c2;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 2px 0 #070b12;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .xbox-btn {
+            width: var(--xbtn);
+            height: var(--xbtn);
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 30%, #1d3a2b, #0f1e17 70%);
+            border: 2px solid var(--xbox);
+            color: var(--xbox);
+            font-size: calc(var(--xbtn) * 0.42);
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                0 0 18px rgba(82, 224, 138, 0.45),
+                inset 0 0 12px rgba(82, 224, 138, 0.25);
+        }
+
+        .xbox-btn.is-pressed,
+        .xbox-btn:active {
+            box-shadow:
+                0 0 26px rgba(82, 224, 138, 0.7),
+                inset 0 0 16px rgba(82, 224, 138, 0.4);
+        }
+
+        .data-toggle {
+            margin-top: 2px;
+            height: 20px;
+            padding: 0 12px;
+            border-radius: 999px;
+            background: #131a27;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        }
+
+        .data-toggle[aria-pressed="true"] {
+            color: var(--xbox);
+            box-shadow: inset 0 0 0 1px rgba(82, 224, 138, 0.4);
+        }
+
+        /* Face buttons (ABXY diamond) */
+        .face {
+            display: grid;
+            grid-template-columns: repeat(3, var(--fcell));
+            grid-template-rows: repeat(3, var(--fcell));
+            gap: 4px;
+            flex: 0 0 auto;
+        }
+
+        .face-btn {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0) 42%),
+                var(--c);
+            color: #ffffff;
+            font-size: calc(var(--fcell) * 0.4);
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), 0 0 16px -4px var(--c);
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+        }
+
+        .face-btn.is-pressed,
+        .face-btn:active {
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45), 0 0 22px -2px var(--c);
+        }
+
+        .face-btn.y {
+            grid-column: 2;
+            grid-row: 1;
+            --c: var(--y);
+            color: #1d1500;
+            text-shadow: none;
+        }
+
+        .face-btn.x {
+            grid-column: 1;
+            grid-row: 2;
+            --c: var(--x);
+        }
+
+        .face-btn.b {
+            grid-column: 3;
+            grid-row: 2;
+            --c: var(--b);
+        }
+
+        .face-btn.a {
+            grid-column: 2;
+            grid-row: 3;
+            --c: var(--a);
+        }
+
+        /* Live state preview */
+        .preview {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            display: none;
+            pointer-events: none;
+            margin: 0;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(7, 10, 17, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            color: #9aa8c2;
+            font-family: Consolas, "Courier New", ui-monospace, monospace;
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        .preview.open {
+            display: block;
+        }
+
+        .preview pre {
+            margin: 0;
+            white-space: pre;
+            font: inherit;
+        }
+
+        /* Portrait lock hint */
+        .rotate-hint {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: var(--bg);
+            color: var(--muted);
+            font-size: 15px;
+            text-align: center;
+            padding: 24px;
+        }
+
+        @media (orientation: portrait) {
+            .rotate-hint {
+                display: flex;
+            }
+
+            .app {
+                visibility: hidden;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .btn {
+                transition: none;
+            }
+        }
+
+        /* ---------- Connection status pill ---------- */
+
+        [hidden] {
+            display: none !important;
+        }
+
+        .conn-status {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            height: 24px;
+            margin-top: 2px;
+            padding: 0 12px;
+            border: 0;
+            border-radius: 999px;
+            background: #131a27;
+            color: var(--muted);
+            font: inherit;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .conn-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            flex: 0 0 auto;
+        }
+
+        .conn-status[data-state="connecting"] {
+            color: var(--y);
+        }
+
+        .conn-status[data-state="connected"] {
+            color: var(--xbox);
+            box-shadow: inset 0 0 0 1px rgba(82, 224, 138, 0.35);
+        }
+
+        .conn-status[data-state="disconnected"] {
+            color: var(--b);
+        }
+
+        .conn-status[data-state="connecting"] .conn-dot {
+            animation: conn-pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes conn-pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.25;
+            }
+        }
+
+        /* ---------- Connection screen ---------- */
+
+        .conn-overlay,
+        .conn-overlay * {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .conn-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(7, 10, 17, 0.92);
+        }
+
+        .conn-card {
+            width: min(94vw, 600px);
+            max-height: 100%;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+            padding: 20px 22px;
+            border-radius: 22px;
+            background: linear-gradient(165deg, var(--shell-top), var(--shell-bottom));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .conn-card.scanning {
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+        }
+
+        .conn-main {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .conn-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .conn-hint {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.45;
+            color: var(--muted);
+        }
+
+        .conn-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .conn-input {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 12px;
+            background: var(--well);
+            color: var(--text);
+            font: 500 15px/1 Consolas, "Courier New", ui-monospace, monospace;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+            user-select: text;
+            -webkit-user-select: text;
+            touch-action: manipulation;
+        }
+
+        .conn-input:focus {
+            outline: none;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(82, 224, 138, 0.5);
+        }
+
+        .conn-message {
+            min-height: 16px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: var(--muted);
+        }
+
+        .conn-message.is-error {
+            color: var(--b);
+        }
+
+        .conn-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .conn-btn {
+            flex: 1 1 110px;
+            height: 44px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 12px;
+            background: linear-gradient(#263146, #18202f);
+            color: var(--text);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 3px 0 #070b12;
+        }
+
+        .conn-btn.primary {
+            background: linear-gradient(#5cf09a, #3fc97a);
+            color: #06210f;
+            box-shadow: 0 3px 0 #1f7a47, 0 0 18px rgba(82, 224, 138, 0.35);
+        }
+
+        .conn-btn:active {
+            transform: scale(0.96);
+        }
+
+        .conn-link {
+            align-self: flex-start;
+            padding: 4px 0;
+            border: 0;
+            background: none;
+            color: var(--muted);
+            font: inherit;
+            font-size: 12px;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .conn-scan {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #scannerView {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .conn-status[data-state="connecting"] .conn-dot {
+                animation: none;
+            }
+        }
+
+        /* ---------- Upgrade (license) modal ---------- */
+
+        .upgrade-overlay,
+        .upgrade-overlay * {
+            touch-action: manipulation;
+            -webkit-user-select: none;
+        }
+
+        .upgrade-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            background: rgba(4, 6, 11, 0.94);
+        }
+
+        .upgrade-card {
+            width: min(96vw, 680px);
+            max-height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px 18px;
+            border-radius: 20px;
+            background: linear-gradient(165deg, var(--shell-top), var(--shell-bottom));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .upgrade-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .upgrade-reason {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.45;
+            color: var(--y);
+        }
+
+        .upgrade-tiers {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .tier {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 12px;
+            border-radius: 16px;
+            background: var(--well);
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .tier.ultimate {
+            box-shadow: inset 0 0 0 1px rgba(245, 179, 0, 0.45);
+        }
+
+        .tier h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .tier .price {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--xbox);
+        }
+
+        .tier ul {
+            margin: 0 0 4px;
+            padding-left: 16px;
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--muted);
+        }
+
+        .tier .conn-btn {
+            flex: 0 0 auto;
+            margin-top: auto;
+        }
+
+        @media (max-height: 420px) {
+            .upgrade-card {
+                gap: 8px;
+                padding: 12px 14px;
+            }
+
+            .tier ul {
+                display: none;
+            }
+        }
+
+        /* ---------- Pro features: gyro, macros, toast ---------- */
+
+        .feature-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .feature-pill {
+            height: 20px;
+            padding: 0 8px;
+            border-radius: 999px;
+            background: #131a27;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        }
+
+        .feature-pill[aria-pressed="true"] {
+            color: var(--xbox);
+            box-shadow: inset 0 0 0 1px rgba(82, 224, 138, 0.4);
+        }
+
+        .upgrade-overlay .conn-input {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .macro-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 28vh;
+            overflow-y: auto;
+        }
+
+        .macro-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: var(--well);
+        }
+
+        .macro-info {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .macro-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .macro-meta {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .macro-item .conn-btn {
+            flex: 0 0 auto;
+            height: 34px;
+            padding: 0 12px;
+            font-size: 12px;
+        }
+
+        .rec-pill {
+            position: fixed;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 25;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 32px;
+            padding: 0 6px 0 12px;
+            border-radius: 999px;
+            background: rgba(40, 12, 14, 0.94);
+            color: #ffb4b6;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            box-shadow: inset 0 0 0 1px rgba(229, 72, 77, 0.5);
+        }
+
+        .rec-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--b);
+            animation: conn-pulse 1s ease-in-out infinite;
+        }
+
+        .rec-pill button {
+            height: 24px;
+            padding: 0 12px;
+            border: 0;
+            border-radius: 999px;
+            background: var(--b);
+            color: #fff;
+            font: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 48px;
+            transform: translateX(-50%);
+            z-index: 40;
+            max-width: 90vw;
+            padding: 8px 14px;
+            border-radius: 12px;
+            background: rgba(7, 10, 17, 0.94);
+            color: var(--text);
+            font-size: 12px;
+            line-height: 1.4;
+            text-align: center;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 10px 24px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .toast.is-error {
+            color: var(--b);
+        }
+
+        /* ---------- Touch layout editor ---------- */
+
+        .layout-bar,
+        .layout-bar * {
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .layout-bar {
+            position: fixed;
+            left: 50%;
+            bottom: max(6px, env(safe-area-inset-bottom, 0px));
+            transform: translateX(-50%);
+            z-index: 45;
+            width: min(96vw, 760px);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 16px;
+            background: rgba(7, 10, 17, 0.96);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 28px rgba(0, 0, 0, 0.55);
+        }
+
+        .layout-name {
+            flex: 1 1 160px;
+            min-width: 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .layout-bar .conn-btn {
+            flex: 0 0 auto;
+            height: 36px;
+            padding: 0 12px;
+            font-size: 13px;
+        }
+
+        .layout-bar input[type="range"] {
+            flex: 1 1 160px;
+            min-width: 120px;
+            accent-color: var(--xbox);
+        }
+
+        .layout-bar button:disabled,
+        .layout-bar input:disabled {
+            opacity: 0.4;
+        }
+
+        body.layout-editing [data-btn],
+        body.layout-editing [data-stick] {
+            outline: 2px dashed rgba(82, 224, 138, 0.55);
+            outline-offset: 3px;
+        }
+
+        body.layout-editing [data-btn].layout-selected,
+        body.layout-editing [data-stick].layout-selected {
+            outline: 2px solid var(--xbox);
+            outline-offset: 4px;
+        }
+
+        /* ---------- Shot power meter ---------- */
+
+        .face-btn.has-power {
+            position: relative;
+        }
+
+        .power-ring {
+            position: absolute;
+            inset: -7px;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 200ms ease, filter 120ms ease;
+            background: conic-gradient(var(--c) calc(var(--power, 0) * 1%), rgba(255, 255, 255, 0.14) 0);
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+        }
+
+        .face-btn.is-charging .power-ring {
+            opacity: 1;
+        }
+
+        .face-btn.power-full .power-ring {
+            filter: brightness(1.6) drop-shadow(0 0 6px var(--c));
+        }
+
+        .power-value {
+            position: absolute;
+            left: 50%;
+            top: -22px;
+            transform: translateX(-50%);
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: rgba(7, 10, 17, 0.9);
+            color: var(--text);
+            font-size: 10px;
+            font-weight: 800;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 200ms ease;
+        }
+
+        .power-value:not(:empty) {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="rotate-hint" role="status">Rotate your phone to landscape to play.</div>
+
+    <main class="app" aria-label="Virtual gamepad">
+
+        <div class="shoulders">
+            <div class="shoulder-group">
+                <button class="btn shoulder" data-btn="LB" aria-label="Left bumper">LB</button>
+                <button class="btn shoulder" data-btn="LT" aria-label="Left trigger">LT</button>
+            </div>
+
+            <button class="conn-status" id="connStatus" type="button" data-state="disconnected" aria-live="polite"
+                aria-label="Connection status. Tap to change server.">
+                <span class="conn-dot" aria-hidden="true"></span>
+                <span id="connStatusLabel">Disconnected</span>
+            </button>
+
+            <div class="shoulder-group">
+                <button class="btn shoulder" data-btn="RT" aria-label="Right trigger">RT</button>
+                <button class="btn shoulder" data-btn="RB" aria-label="Right bumper">RB</button>
+            </div>
+        </div>
+
+        <section class="controller">
+
+            <div class="preview" id="preview" aria-live="off">
+                <pre id="payload"></pre>
+            </div>
+
+            <!-- Left zone: D-pad (far left) and left analog stick -->
+            <div class="zone zone-left">
+                <div class="dpad" role="group" aria-label="D-pad">
+                    <button class="btn dpad-btn up" data-btn="dpadUp" aria-label="D-pad up">&#9650;</button>
+                    <button class="btn dpad-btn left" data-btn="dpadLeft" aria-label="D-pad left">&#9664;</button>
+                    <span class="dpad-core" aria-hidden="true"></span>
+                    <button class="btn dpad-btn right" data-btn="dpadRight" aria-label="D-pad right">&#9654;</button>
+                    <button class="btn dpad-btn down" data-btn="dpadDown" aria-label="D-pad down">&#9660;</button>
+                </div>
+
+                <div class="stick" data-stick="left" role="application" aria-label="Left analog stick">
+                    <div class="stick-knob"></div>
+                </div>
+            </div>
+
+            <!-- Center zone: VIEW / MENU pills, Xbox guide button, data toggle, Pro feature buttons -->
+            <div class="zone zone-center">
+                <div class="system-row">
+                    <button class="btn pill" data-btn="VIEW" aria-label="View">VIEW</button>
+                    <button class="btn pill" data-btn="MENU" aria-label="Menu">MENU</button>
+                </div>
+                <button class="btn xbox-btn" data-btn="XBOX" aria-label="Xbox guide">X</button>
+                <button class="data-toggle" id="toggleData" type="button" aria-pressed="false"
+                    aria-controls="preview">Data</button>
+                <div class="feature-row">
+                    <button class="btn feature-pill" id="gyroBtn" type="button" aria-pressed="false"
+                        aria-label="Gyro aim (Pro)">Gyro</button>
+                    <button class="btn feature-pill" id="macroBtn" type="button"
+                        aria-label="Macro studio (Pro)">Macros</button>
+                </div>
+
+                <button class="btn feature-pill" id="layoutBtn" type="button" aria-label="Edit touch layout">Edit touch
+                    layout</button>
+
+            </div>
+
+            <!-- Right zone: right analog stick (left side) and ABXY face buttons (right side) -->
+            <div class="zone zone-right">
+                <div class="stick" data-stick="right" role="application" aria-label="Right analog stick">
+                    <div class="stick-knob"></div>
+                </div>
+
+                <div class="face" role="group" aria-label="Face buttons">
+                    <button class="btn face-btn y" data-btn="Y" aria-label="Y">Y</button>
+                    <button class="btn face-btn x" data-btn="X" aria-label="X">X</button>
+                    <button class="btn face-btn b" data-btn="B" aria-label="B">B</button>
+                    <button class="btn face-btn a" data-btn="A" aria-label="A">A</button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Connection screen -->
+    <div class="conn-overlay" id="connOverlay" hidden>
+        <div class="conn-card" id="connCard" role="dialog" aria-modal="true" aria-labelledby="connTitle">
+
+            <div class="conn-main">
+                <h1 class="conn-title" id="connTitle">Connect to your PC</h1>
+                <p class="conn-hint">Scan the QR code shown in your PC's terminal, or type the address it shows.</p>
+
+                <label class="conn-label" for="serverInput">Server address</label>
+                <input class="conn-input" id="serverInput" type="text" inputmode="url" autocomplete="off"
+                    autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="192.168.1.50:5000">
+
+                <div class="conn-message" id="connMessage" role="status"></div>
+
+                <div class="conn-actions">
+                    <button class="conn-btn primary" id="connectBtn" type="button">Connect</button>
+                    <button class="conn-btn" id="scanBtn" type="button">Scan QR</button>
+                    <button class="conn-btn" id="stopScanBtn" type="button" hidden>Stop scan</button>
+                    <button class="conn-btn" id="upgradeBtn" type="button">Upgrade</button>
+                    <button class="conn-btn" id="disconnectBtn" type="button" hidden>Disconnect</button>
+                </div>
+
+                <button class="conn-link" id="backBtn" type="button" hidden>Back to gamepad</button>
+            </div>
+
+            <div class="conn-scan" id="scanPanel" hidden>
+                <div id="scannerView"></div>
+                <p class="conn-hint">Point the camera at the QR code.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Upgrade (license) modal -->
+    <div class="upgrade-overlay" id="upgradeOverlay" hidden>
+        <div class="upgrade-card" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle">
+
+            <div class="upgrade-head">
+                <h2 class="conn-title" id="upgradeTitle">Unlock more on this PC</h2>
+                <button class="conn-link" id="upgradeClose" type="button">Not now</button>
+            </div>
+
+            <p class="upgrade-reason" id="upgradeReason" hidden></p>
+
+            <label class="conn-label" for="payEmail">Email for your receipt</label>
+            <input class="conn-input" id="payEmail" type="email" inputmode="email" autocomplete="email"
+                autocapitalize="off" spellcheck="false" placeholder="you@example.com">
+
+            <div class="upgrade-tiers">
+                <div class="tier" id="proCard">
+                    <h3>Pro</h3>
+                    <div class="price" id="proPrice">$5</div>
+                    <ul>
+                        <li>Gyro aiming</li>
+                        <li>Macro builder</li>
+                        <li>Deadzone tuning</li>
+                        <li>One phone on this PC</li>
+                    </ul>
+                    <button class="conn-btn primary" type="button" data-buy="PRO">Unlock Pro</button>
+                </div>
+
+                <div class="tier ultimate" id="ultimateCard">
+                    <h3>Ultimate Co-Op</h3>
+                    <div class="price" id="ultimatePrice">$15</div>
+                    <ul>
+                        <li>Up to 4 phones on this PC</li>
+                        <li>All Pro features for every phone</li>
+                    </ul>
+                    <button class="conn-btn primary" type="button" data-buy="ULTIMATE">Unlock Ultimate</button>
+                </div>
+            </div>
+
+            <div class="conn-message" id="upgradeMessage" role="status"></div>
+
+        </div>
+    </div>
+
+    <!-- Macro Studio (Pro) -->
+    <div class="upgrade-overlay" id="macroPanel" hidden>
+        <div class="upgrade-card" role="dialog" aria-modal="true" aria-labelledby="macroTitle">
+
+            <div class="upgrade-head">
+                <h2 class="conn-title" id="macroTitle">Macro Studio</h2>
+                <button class="conn-link" id="macroClose" type="button">Close</button>
+            </div>
+
+            <p class="conn-hint">Record a sequence of button presses with their timing, then play it back with one tap.
+                Joysticks are not recorded.</p>
+
+            <button class="conn-btn primary" id="macroRecordBtn" type="button">Record new macro</button>
+
+            <label class="conn-label" for="macroName">Macro name</label>
+            <input class="conn-input" id="macroName" type="text" maxlength="24" autocomplete="off" autocapitalize="off"
+                autocorrect="off" spellcheck="false" placeholder="Combo 1">
+
+            <div class="conn-actions">
+                <button class="conn-btn primary" id="macroSaveBtn" type="button">Save macro</button>
+                <button class="conn-btn" id="macroDiscardBtn" type="button">Discard</button>
+            </div>
+
+            <div class="conn-message" id="macroMessage" role="status"></div>
+
+            <div class="macro-list" id="macroList"></div>
+
+        </div>
+    </div>
+
+    <!-- Floating recording indicator, shown while a macro is being recorded -->
+    <div class="rec-pill" id="recPill" hidden>
+        <span class="rec-dot" aria-hidden="true"></span>
+        <span>REC</span>
+        <button id="recStopBtn" type="button">Stop</button>
+    </div>
+
+    <!-- Touch layout editor bar (visible only while editing) -->
+    <div class="layout-bar" id="layoutBar" role="toolbar" aria-label="Touch layout editor" hidden>
+        <span class="layout-name" id="layoutName">Tap a button, then drag it.</span>
+        <button class="conn-btn" id="layoutSmaller" type="button">Smaller</button>
+        <input type="range" id="layoutSize" min="60" max="180" step="5" value="100" aria-label="Button size, percent">
+        <button class="conn-btn" id="layoutBigger" type="button">Bigger</button>
+        <button class="conn-btn" id="layoutResetOne" type="button">Reset</button>
+        <button class="conn-btn" id="layoutResetAll" type="button">Reset all</button>
+        <button class="conn-btn primary" id="layoutDone" type="button">Done</button>
+    </div>
+
+    <div class="toast" id="toast" role="status" hidden></div>
+
+    <!-- Gamepad input and state -->
+    <script>
+        (() => {
+            'use strict';
+
+            /* ---------- Shared state ---------- */
+
+            const state = {
+                leftStick: { x: 0, y: 0 },
+                rightStick: { x: 0, y: 0 },
+                buttons: {
+                    A: false,
+                    B: false,
+                    X: false,
+                    Y: false,
+                    LB: false,
+                    RB: false,
+                    LT: false,
+                    RT: false,
+                    VIEW: false,
+                    MENU: false,
+                    XBOX: false,
+                    dpadUp: false,
+                    dpadDown: false,
+                    dpadLeft: false,
+                    dpadRight: false
+                }
+            };
+
+            /* ---------- Virtual inputs (gyro aim and macro playback) ---------- */
+            // Kept apart from physical input so each source can be cleared on its own.
+            const virtual = {
+                motion: { x: 0, y: 0 },   // gyro aim; drives the right stick while the physical stick is idle
+                buttons: {}               // macro playback; ORed with physical buttons
+            };
+
+            let dirty = true;
+            const releasers = [];
+
+            const round2 = (value) => (Math.round(value * 100) / 100) || 0;
+
+            // The snapshot sent to the PC: physical input merged with gyro and macro input.
+            function composedState() {
+                const buttons = {};
+                for (const name of Object.keys(state.buttons)) {
+                    buttons[name] = state.buttons[name] || !!virtual.buttons[name];
+                }
+                const physicalRightActive = state.rightStick.x !== 0 || state.rightStick.y !== 0;
+                return {
+                    leftStick: { ...state.leftStick },
+                    rightStick: physicalRightActive ? { ...state.rightStick } : { ...virtual.motion },
+                    buttons
+                };
+            }
+
+            /* ---------- Buttons ---------- */
+
+            function setButton(name, el, pressed) {
+                if (state.buttons[name] !== pressed) {
+                    state.buttons[name] = pressed;
+                    dirty = true;
+                    // Physical presses only. Macro playback is never re-recorded.
+                    window.dispatchEvent(new CustomEvent('gamepadbutton', { detail: { name, pressed } }));
+                }
+                el.classList.toggle('is-pressed', pressed || !!virtual.buttons[name]);
+            }
+
+            function bindButton(el) {
+                const name = el.dataset.btn;
+                const sync = (pressed) => setButton(name, el, pressed);
+
+                // Touch: e.targetTouches holds every touch that began on this element,
+                // so the button stays pressed while at least one finger is still on it.
+                const onTouch = (e) => {
+                    e.preventDefault();
+                    sync(e.targetTouches.length > 0);
+                };
+
+                el.addEventListener('touchstart', onTouch, { passive: false });
+                el.addEventListener('touchmove', onTouch, { passive: false });
+                el.addEventListener('touchend', onTouch, { passive: false });
+                el.addEventListener('touchcancel', onTouch, { passive: false });
+
+                // Mouse fallback for desktop testing
+                el.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return;
+                    e.preventDefault();
+                    sync(true);
+                    const up = () => {
+                        sync(false);
+                        window.removeEventListener('mouseup', up);
+                    };
+                    window.addEventListener('mouseup', up);
+                });
+
+                releasers.push(() => sync(false));
+            }
+
+            /* ---------- Analog sticks ---------- */
+
+            function findTouch(touchList, id) {
+                for (let i = 0; i < touchList.length; i++) {
+                    if (touchList[i].identifier === id) return touchList[i];
+                }
+                return null;
+            }
+
+            function bindStick(el) {
+                const key = el.dataset.stick === 'left' ? 'leftStick' : 'rightStick';
+                const knob = el.querySelector('.stick-knob');
+                let activeId = null; // touch identifier, 'mouse', or null
+
+                // Maps a screen point to a knob position clamped inside the base,
+                // then normalises it to -1.0 .. 1.0 (y: up = -1, down = +1, like the Web Gamepad API).
+                function render(clientX, clientY) {
+                    const rect = el.getBoundingClientRect();
+                    const knobRect = knob.getBoundingClientRect();
+                    // Screen pixels per layout pixel. Greater than 1 when the user has enlarged this stick.
+                    const zoom = el.offsetWidth ? rect.width / el.offsetWidth : 1;
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    const maxRadius = (rect.width - knobRect.width) / 2; // screen pixels
+
+                    let dx = clientX - cx;
+                    let dy = clientY - cy;
+                    const distance = Math.hypot(dx, dy);
+
+                    if (distance > maxRadius && distance > 0) {
+                        const scale = maxRadius / distance;
+                        dx *= scale;
+                        dy *= scale;
+                    }
+
+                    // The knob sits inside the scaled base, so its offset is converted back to layout pixels.
+                    el.style.setProperty('--kx', (dx / zoom).toFixed(1) + 'px');
+                    el.style.setProperty('--ky', (dy / zoom).toFixed(1) + 'px');
+
+                    state[key] = {
+                        x: round2(maxRadius ? dx / maxRadius : 0),
+                        y: round2(maxRadius ? dy / maxRadius : 0)
+                    };
+                    dirty = true;
+                }
+
+                function release() {
+                    activeId = null;
+                    el.classList.remove('is-active');
+                    el.style.setProperty('--kx', '0px');
+                    el.style.setProperty('--ky', '0px');
+                    state[key] = { x: 0, y: 0 };
+                    dirty = true;
+                }
+
+                el.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (activeId !== null) return; // one finger per stick; extra fingers are ignored here
+                    const touch = e.changedTouches[0];
+                    activeId = touch.identifier;
+                    el.classList.add('is-active');
+                    render(touch.clientX, touch.clientY);
+                }, { passive: false });
+
+                el.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (activeId === null) return;
+                    const touch = findTouch(e.targetTouches, activeId);
+                    if (touch) render(touch.clientX, touch.clientY);
+                }, { passive: false });
+
+                const onTouchEnd = (e) => {
+                    e.preventDefault();
+                    if (activeId === null) return;
+                    if (!findTouch(e.targetTouches, activeId)) release();
+                };
+                el.addEventListener('touchend', onTouchEnd, { passive: false });
+                el.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+                // Mouse fallback for desktop testing
+                el.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0 || activeId !== null) return;
+                    e.preventDefault();
+                    activeId = 'mouse';
+                    el.classList.add('is-active');
+                    render(e.clientX, e.clientY);
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if (activeId === 'mouse') render(e.clientX, e.clientY);
+                });
+                window.addEventListener('mouseup', () => {
+                    if (activeId === 'mouse') release();
+                });
+
+                releasers.push(release);
+            }
+
+            document.querySelectorAll('[data-btn]').forEach(bindButton);
+            document.querySelectorAll('[data-stick]').forEach(bindStick);
+
+            /* ---------- Virtual input control (used by gyro and macros) ---------- */
+
+            function setMotion(x, y) {
+                const nx = round2(Math.max(-1, Math.min(1, Number(x) || 0)));
+                const ny = round2(Math.max(-1, Math.min(1, Number(y) || 0)));
+                if (nx !== virtual.motion.x || ny !== virtual.motion.y) {
+                    virtual.motion = { x: nx, y: ny };
+                    dirty = true;
+                }
+            }
+
+            function setVirtualButton(name, pressed) {
+                if (!Object.prototype.hasOwnProperty.call(state.buttons, name)) return false;
+                const next = !!pressed;
+                if (!!virtual.buttons[name] !== next) {
+                    virtual.buttons[name] = next;
+                    dirty = true;
+                }
+                const el = document.querySelector(`[data-btn="${name}"]`);
+                if (el) el.classList.toggle('is-pressed', next || state.buttons[name]);
+                return true;
+            }
+
+            function clearVirtualButtons() {
+                Object.keys(virtual.buttons).forEach((name) => setVirtualButton(name, false));
+            }
+
+            /* ---------- Disable browser gestures during play ---------- */
+
+            document.addEventListener('gesturestart', (e) => e.preventDefault());
+            document.addEventListener('gesturechange', (e) => e.preventDefault());
+            // Block page scrolling and zooming during play, but let overlay lists scroll.
+            document.addEventListener('touchmove', (e) => {
+                if (!e.target.closest || !e.target.closest('.upgrade-overlay, .conn-overlay, #layoutBar')) e.preventDefault();
+            }, { passive: false });
+            // Long-press menus are blocked everywhere except text fields, so paste still works.
+            document.addEventListener('contextmenu', (e) => {
+                if (!e.target.closest || !e.target.closest('input, textarea')) e.preventDefault();
+            });
+
+            /* ---------- Release everything if the app loses focus ---------- */
+
+            const releaseAll = () => {
+                releasers.forEach((fn) => fn());
+                clearVirtualButtons();
+                setMotion(0, 0);
+                window.dispatchEvent(new Event('gamepadreset'));
+            };
+            window.addEventListener('blur', releaseAll);
+            window.addEventListener('pagehide', releaseAll);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) releaseAll();
+            });
+
+            /* ---------- Live state preview ---------- */
+
+            const previewEl = document.getElementById('preview');
+            const payloadEl = document.getElementById('payload');
+            const toggleEl = document.getElementById('toggleData');
+
+            toggleEl.addEventListener('click', () => {
+                const open = previewEl.classList.toggle('open');
+                toggleEl.setAttribute('aria-pressed', String(open));
+            });
+
+            function formatState() {
+                const snap = composedState();
+                const keys = Object.keys(snap.buttons);
+                const rows = [];
+                for (let i = 0; i < keys.length; i += 4) {
+                    rows.push(
+                        keys.slice(i, i + 4).map((k) => `"${k}": ${snap.buttons[k]}`).join(', ')
+                    );
+                }
+                const lines = [
+                    '{',
+                    `  "leftStick": { "x": ${snap.leftStick.x.toFixed(2)}, "y": ${snap.leftStick.y.toFixed(2)} },`,
+                    `  "rightStick": { "x": ${snap.rightStick.x.toFixed(2)}, "y": ${snap.rightStick.y.toFixed(2)} },`,
+                    '  "buttons": {'
+                ];
+                rows.forEach((row, i) => {
+                    lines.push(`    ${row}${i < rows.length - 1 ? ',' : ''}`);
+                });
+                lines.push('  }');
+                lines.push('}');
+                return lines.join('\n');
+            }
+
+            /* ---------- Public API for game code and feature modules ---------- */
+
+            window.gamepad = {
+                getState() {
+                    return JSON.parse(JSON.stringify(composedState()));
+                },
+                setMotion,
+                setVirtualButton,
+                clearVirtualButtons
+            };
+
+            /* ---------- Render loop: update preview and broadcast changes ---------- */
+
+            function frame() {
+                if (dirty) {
+                    dirty = false;
+                    payloadEl.textContent = formatState();
+                    window.dispatchEvent(new CustomEvent('gamepadstate', { detail: window.gamepad.getState() }));
+                }
+                requestAnimationFrame(frame);
+            }
+
+            requestAnimationFrame(frame);
+        })();
+    </script>
+
+    <!-- QR scanner library (MIT). Pinned version from jsDelivr. -->
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <!-- Flutterwave Inline checkout SDK -->
+    <script src="https://checkout.flutterwave.com/v3.js"></script>
+
+    <!-- Connection manager, license state, and payments -->
+    <script>
+        (() => {
+            'use strict';
+
+            const SAVED_KEY = 'mobileGamepad.server';
+            const PENDING_KEY = 'mobileGamepad.pendingPayment';
+            const DEFAULT_PORT = 5000;
+            const CONNECT_TIMEOUT_MS = 4000;
+            const HEARTBEAT_MS = 100;
+            const RETRY_BASE_MS = 1000;
+            const RETRY_MAX_MS = 5000;
+            const MAX_RETRIES = 5;
+            const CLOSE_UPGRADE_REQUIRED = 4003;   // must match gamepad_server.py
+
+            /* ---------- Licensing and payment settings ---------- */
+
+            // ============================================================
+            // FLUTTERWAVE PUBLIC KEY
+            // Put your key here. Use the PUBLIC key (starts with FLWPUBK_LIVE- for live,
+            // or FLWPUBK_TEST- for testing). Never put the SECRET key (FLWSECK) here.
+            // ============================================================
+            const FLUTTERWAVE_PUBLIC_KEY = 'FLWPUBK-8cdd0ad28e8c294c2f7ad7a21a771785-X';
+
+            // Currency the checkout charges in. Must exist in PRICES below.
+            const DISPLAY_CURRENCY = 'USD';
+
+            // Must match PRICE_TABLE in gamepad_server.py.
+            const PRICES = {
+                PRO: { USD: 5, NGN: 7500 },
+                ULTIMATE: { USD: 15, NGN: 22500 }
+            };
+
+            const TIER_LABEL = { FREE: 'Free', PRO: 'Pro', ULTIMATE: 'Ultimate' };
+            const TIER_RANK = { FREE: 0, PRO: 1, ULTIMATE: 2 };
+
+            // Display mirror of FEATURE_MIN_TIER in the server. The PC decides; this only chooses what to show.
+            const FEATURE_TIER = {
+                gyro: 'PRO',
+                macros: 'PRO',
+                deadzone_tuning: 'PRO',
+                custom_layout: 'PRO',
+                multiplayer: 'ULTIMATE'
+            };
+
+            const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            const $ = (id) => document.getElementById(id);
+            const els = {
+                pill: $('connStatus'),
+                pillLabel: $('connStatusLabel'),
+                overlay: $('connOverlay'),
+                card: $('connCard'),
+                input: $('serverInput'),
+                message: $('connMessage'),
+                connectBtn: $('connectBtn'),
+                scanBtn: $('scanBtn'),
+                stopScanBtn: $('stopScanBtn'),
+                upgradeBtn: $('upgradeBtn'),
+                disconnectBtn: $('disconnectBtn'),
+                backBtn: $('backBtn'),
+                scanPanel: $('scanPanel'),
+                upgradeOverlay: $('upgradeOverlay'),
+                upgradeReason: $('upgradeReason'),
+                upgradeMessage: $('upgradeMessage'),
+                upgradeClose: $('upgradeClose'),
+                payEmail: $('payEmail'),
+                proCard: $('proCard'),
+                ultimateCard: $('ultimateCard'),
+                proPrice: $('proPrice'),
+                ultimatePrice: $('ultimatePrice')
+            };
+
+            let status = 'disconnected';   // 'connecting' | 'connected' | 'disconnected'
+            let session = null;            // { target, origin, opened, socket, timer, serverError, serverMessage }
+            let retryTimer = null;
+            let retryCount = 0;
+            let heartbeatId = null;
+            let scanner = null;
+            let scanning = false;
+            let checkoutOpen = false;
+            let license = { tier: 'FREE', features: {}, capacity: 1, player: null };
+
+            /* ---------- Address parsing ---------- */
+
+            // Accepts "192.168.1.50", "192.168.1.50:5000", "ws://192.168.1.50:5000",
+            // or any URL with a path. Returns { host, port } or null.
+            function parseServerAddress(raw) {
+                if (typeof raw !== 'string') return null;
+                let text = raw.trim();
+                if (!text) return null;
+                text = text.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
+                text = text.split(/[/?#]/)[0];
+
+                let host = text;
+                let port = DEFAULT_PORT;
+                const match = text.match(/^(.+):(\d{1,5})$/);
+                if (match) {
+                    host = match[1];
+                    port = Number(match[2]);
+                }
+
+                if (!/^[A-Za-z0-9.-]{1,253}$/.test(host)) return null;
+                if (!Number.isInteger(port) || port < 1 || port > 65535) return null;
+                return { host, port };
+            }
+
+            const formatTarget = (t) => `${t.host}:${t.port}`;
+
+            /* ---------- Saved server ---------- */
+
+            function saveServer(target) {
+                try {
+                    localStorage.setItem(SAVED_KEY, JSON.stringify({ host: target.host, port: target.port }));
+                } catch (_) {
+                    // Storage can be unavailable; the app still works without saving.
+                }
+            }
+
+            function loadServer() {
+                try {
+                    const raw = localStorage.getItem(SAVED_KEY);
+                    if (!raw) return null;
+                    const data = JSON.parse(raw);
+                    if (typeof data.host !== 'string' || !Number.isInteger(data.port)) return null;
+                    return parseServerAddress(`${data.host}:${data.port}`);
+                } catch (_) {
+                    return null;
+                }
+            }
+
+            /* ---------- Pending payments (survive app restarts and dropped connections) ---------- */
+
+            function savePending(payload) {
+                try { localStorage.setItem(PENDING_KEY, JSON.stringify(payload)); } catch (_) { /* ignore */ }
+            }
+
+            function loadPending() {
+                try {
+                    const raw = localStorage.getItem(PENDING_KEY);
+                    return raw ? JSON.parse(raw) : null;
+                } catch (_) {
+                    return null;
+                }
+            }
+
+            function clearPending() {
+                try { localStorage.removeItem(PENDING_KEY); } catch (_) { /* ignore */ }
+            }
+
+            /* ---------- UI helpers ---------- */
+
+            const isConnected = () =>
+                !!session && session.opened && !!session.socket && session.socket.readyState === WebSocket.OPEN;
+
+            const hasLink = () => session !== null || retryTimer !== null;
+
+            function updateButtons() {
+                els.disconnectBtn.hidden = !hasLink();
+                els.backBtn.hidden = status !== 'connected';
+            }
+
+            function statusLabel(next) {
+                if (next === 'connected') {
+                    return license.player ? `Connected · P${license.player}` : 'Connected';
+                }
+                return next === 'connecting' ? 'Connecting' : 'Disconnected';
+            }
+
+            function setStatus(next) {
+                status = next;
+                els.pill.dataset.state = next;
+                els.pillLabel.textContent = statusLabel(next);
+                updateButtons();
+            }
+
+            function refreshStatusLabel() {
+                els.pillLabel.textContent = statusLabel(status);
+            }
+
+            function showMessage(text, isError = false) {
+                els.message.textContent = text;
+                els.message.classList.toggle('is-error', isError);
+            }
+
+            function setUpgradeMessage(text, isError = false) {
+                els.upgradeMessage.textContent = text;
+                els.upgradeMessage.classList.toggle('is-error', isError);
+            }
+
+            function showOverlay(message = '', isError = false) {
+                if (!els.input.value) {
+                    const saved = loadServer();
+                    if (saved) els.input.value = formatTarget(saved);
+                }
+                showMessage(message, isError);
+                updateButtons();
+                els.overlay.hidden = false;
+            }
+
+            function hideOverlay() {
+                stopScan();
+                els.overlay.hidden = true;
+                showMessage('');
+            }
+
+            /* ---------- License state ---------- */
+
+            function applyLicense(msg) {
+                license.tier = Object.prototype.hasOwnProperty.call(TIER_RANK, msg.tier) ? msg.tier : 'FREE';
+                license.features = msg.features && typeof msg.features === 'object' ? msg.features : {};
+                license.capacity = Number(msg.capacity) || 1;
+                updateUpgradeModal();
+            }
+
+            function priceText(tier) {
+                const amount = PRICES[tier][DISPLAY_CURRENCY];
+                return DISPLAY_CURRENCY === 'USD' ? `$${amount}` : `${DISPLAY_CURRENCY} ${amount}`;
+            }
+
+            function updateUpgradeModal() {
+                const rank = TIER_RANK[license.tier] || 0;
+                els.proCard.hidden = rank >= TIER_RANK.PRO;
+                els.ultimateCard.hidden = rank >= TIER_RANK.ULTIMATE;
+                els.proPrice.textContent = priceText('PRO');
+                els.ultimatePrice.textContent = priceText('ULTIMATE');
+            }
+
+            function showUpgradeModal(reason = '') {
+                updateUpgradeModal();
+                els.upgradeReason.textContent = reason;
+                els.upgradeReason.hidden = !reason;
+
+                let note = '';
+                if ((TIER_RANK[license.tier] || 0) >= TIER_RANK.ULTIMATE) {
+                    note = `${TIER_LABEL[license.tier]} is already unlocked on this PC.`;
+                } else if (!isConnected()) {
+                    note = 'Connect to your PC first. Unlocks apply to the PC you are connected to.';
+                }
+                setUpgradeMessage(note);
+                els.upgradeOverlay.hidden = false;
+            }
+
+            function hideUpgradeModal() {
+                els.upgradeOverlay.hidden = true;
+            }
+
+            function hasFeature(name) {
+                return !!license.features[name];
+            }
+
+            // Call this before a locked feature runs. Shows the upgrade modal when the feature is locked.
+            function requireFeature(name) {
+                if (hasFeature(name)) return true;
+                const needed = TIER_LABEL[FEATURE_TIER[name]] || 'Pro';
+                const readable = name.replace(/_/g, ' ');
+                showUpgradeModal(`${readable.charAt(0).toUpperCase()}${readable.slice(1)} needs ${needed} on this PC.`);
+                return false;
+            }
+
+            /* ---------- Sending ---------- */
+
+            function sendControl(message) {
+                if (!isConnected()) return false;
+                try {
+                    session.socket.send(JSON.stringify(message));
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            function startHeartbeat() {
+                stopHeartbeat();
+                heartbeatId = setInterval(() => sendState(), HEARTBEAT_MS);
+            }
+
+            function stopHeartbeat() {
+                clearInterval(heartbeatId);
+                heartbeatId = null;
+            }
+
+            function sendState(stateOverride) {
+                if (!isConnected()) return;
+                const payload = stateOverride || window.gamepad.getState();
+                try {
+                    session.socket.send(JSON.stringify(payload));
+                } catch (err) {
+                    console.warn('Send failed', err);
+                }
+            }
+
+            // Every input change is sent immediately; the heartbeat keeps the server watchdog fed while idle.
+            window.addEventListener('gamepadstate', (e) => sendState(e.detail));
+
+            /* ---------- Server messages ---------- */
+
+            function flushPendingPayment() {
+                const pending = loadPending();
+                if (pending) sendControl(pending);
+            }
+
+            function handlePaymentResult(msg) {
+                if (msg.ok) {
+                    clearPending();
+                    if (Object.prototype.hasOwnProperty.call(TIER_RANK, msg.tier)) {
+                        license.tier = msg.tier;
+                        updateUpgradeModal();
+                    }
+                    setUpgradeMessage(msg.message || `Unlocked. This PC is on ${TIER_LABEL[license.tier]}.`);
+                } else {
+                    if (!msg.retry) clearPending();
+                    setUpgradeMessage(msg.message || 'The payment could not be confirmed.', true);
+                }
+            }
+
+            function handleServerMessage(s, raw) {
+                let msg;
+                try {
+                    msg = JSON.parse(raw);
+                } catch (_) {
+                    return;
+                }
+                if (!msg || typeof msg !== 'object') return;
+
+                switch (msg.type) {
+                    case 'status':
+                        applyLicense(msg);
+                        license.player = msg.player ?? null;
+                        refreshStatusLabel();
+                        flushPendingPayment();
+                        break;
+
+                    case 'TIER_UPGRADED':
+                        applyLicense(msg);
+                        if (!els.upgradeOverlay.hidden) {
+                            setUpgradeMessage(`${TIER_LABEL[license.tier]} is now unlocked on this PC.`);
+                        }
+                        break;
+
+                    case 'payment_result':
+                        handlePaymentResult(msg);
+                        break;
+
+                    case 'error':
+                        s.serverError = msg.code || 'ERROR';
+                        s.serverMessage = msg.message || '';
+                        break;
+                }
+            }
+
+            /* ---------- Connection lifecycle ---------- */
+
+            // Stops the current session without triggering reconnect logic.
+            function closeSession() {
+                clearTimeout(retryTimer);
+                retryTimer = null;
+                stopHeartbeat();
+                if (session) {
+                    const old = session;
+                    session = null;
+                    clearTimeout(old.timer);
+                    try { old.socket.close(); } catch (_) { /* already closed */ }
+                }
+                license.player = null;
+                setStatus('disconnected');
+            }
+
+            function openSession(target, origin) {
+                closeSession();
+                if (origin !== 'retry') retryCount = 0;
+
+                const s = { target, origin, opened: false, socket: null, timer: null, serverError: null, serverMessage: '' };
+                session = s;
+                setStatus('connecting');
+
+                let socket;
+                try {
+                    socket = new WebSocket(`ws://${target.host}:${target.port}`);
+                } catch (err) {
+                    console.warn('Could not create WebSocket', err);
+                    endSession(s, `Could not open ${formatTarget(target)}.`);
+                    return;
+                }
+                s.socket = socket;
+
+                // Give up on a server that accepts no connection in time.
+                s.timer = setTimeout(() => {
+                    if (!s.opened) socket.close();
+                }, CONNECT_TIMEOUT_MS);
+
+                socket.onopen = () => {
+                    if (session !== s) return;
+                    clearTimeout(s.timer);
+                    s.opened = true;
+                    retryCount = 0;
+                    saveServer(target);
+                    setStatus('connected');
+                    hideOverlay();
+                    startHeartbeat();
+                };
+
+                socket.onmessage = (event) => {
+                    if (session === s) handleServerMessage(s, event.data);
+                };
+
+                socket.onerror = () => { /* onclose always follows an error */ };
+
+                socket.onclose = (event) => {
+                    if (session !== s) return;
+                    clearTimeout(s.timer);
+                    if (s.serverError === 'HOST_UPGRADE_REQUIRED' || event.code === CLOSE_UPGRADE_REQUIRED) {
+                        refuseSession(s);
+                        return;
+                    }
+                    endSession(s, s.opened
+                        ? 'The connection to your PC was lost.'
+                        : `Could not reach ${formatTarget(target)}. Check the address and that the server is running.`);
+                };
+            }
+
+            // The PC refused this phone because its plan is full. Do not retry automatically.
+            function refuseSession(s) {
+                stopHeartbeat();
+                clearTimeout(retryTimer);
+                retryTimer = null;
+                session = null;
+                license.player = null;
+                setStatus('disconnected');
+
+                const text = s.serverMessage || 'Host Upgrade Required. This PC allows one phone on its current plan.';
+                showOverlay('Your PC is full. Connect again after it is upgraded.', true);
+                showUpgradeModal(text);
+            }
+
+            function endSession(s, message) {
+                stopHeartbeat();
+                session = null;
+                license.player = null;
+                setStatus('disconnected');
+
+                // A link that was up, or a background retry, keeps trying quietly with backoff.
+                const lostLink = s.opened || s.origin === 'retry';
+                if (!lostLink) {
+                    showOverlay(message, true);
+                    return;
+                }
+
+                retryCount += 1;
+                if (retryCount > MAX_RETRIES) {
+                    showOverlay(`${message} Reconnect manually or scan the QR code again.`, true);
+                    return;
+                }
+
+                const delay = Math.min(RETRY_BASE_MS * 2 ** (retryCount - 1), RETRY_MAX_MS);
+                retryTimer = setTimeout(() => {
+                    retryTimer = null;
+                    openSession(s.target, 'retry');
+                }, delay);
+                updateButtons();
+            }
+
+            /* ---------- Payments (Flutterwave Inline) ---------- */
+
+            function makeReference() {
+                return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+            }
+
+            // Opens Flutterwave's checkout on the phone. On success, the transaction is sent to the PC for verification.
+            function initiateFlutterwavePayment(tier, amount, currency) {
+                if (checkoutOpen) return;
+
+                if (!FLUTTERWAVE_PUBLIC_KEY || FLUTTERWAVE_PUBLIC_KEY.startsWith('FLUTTERWAVE_PUBLIC')) {
+                    setUpgradeMessage('Payments are not configured in this build yet.', true);
+                    return;
+                }
+                if (typeof window.FlutterwaveCheckout !== 'function') {
+                    setUpgradeMessage('The payment window could not load. Check your internet connection.', true);
+                    return;
+                }
+
+                const email = els.payEmail.value.trim();
+                if (!EMAIL_PATTERN.test(email)) {
+                    setUpgradeMessage('Enter an email address for your receipt.', true);
+                    els.payEmail.focus();
+                    return;
+                }
+
+                // Tier is encoded in the reference. The PC reads it back from Flutterwave's record.
+                const txRef = `gp-${tier}-${makeReference()}`;
+                let finished = false;
+                checkoutOpen = true;
+                setUpgradeMessage('Opening secure checkout…');
+
+                try {
+                    window.FlutterwaveCheckout({
+                        public_key: FLUTTERWAVE_PUBLIC_KEY,
+                        tx_ref: txRef,
+                        amount,
+                        currency,
+                        payment_options: 'card,mobilemoney,ussd,banktransfer',
+                        customer: { email },
+                        customizations: {
+                            title: 'Mobile Gamepad',
+                            description: `${TIER_LABEL[tier]} unlock for your PC`
+                        },
+                        callback: (response) => {
+                            finished = true;
+                            checkoutOpen = false;
+                            onPaymentCallback(txRef, response);
+                        },
+                        onclose: () => {
+                            checkoutOpen = false;
+                            if (!finished) setUpgradeMessage('Checkout closed.');
+                        }
+                    });
+                } catch (err) {
+                    checkoutOpen = false;
+                    console.warn('Checkout failed to open', err);
+                    setUpgradeMessage('Could not open checkout. Try again.', true);
+                }
+            }
+
+            function onPaymentCallback(txRef, response) {
+                if (!response || response.status !== 'successful' || !response.transaction_id) {
+                    setUpgradeMessage('The payment was not completed.', true);
+                    return;
+                }
+
+                // The PC verifies the transaction with Flutterwave. The phone never decides the tier.
+                const pending = {
+                    type: 'verify_payment',
+                    transaction_id: String(response.transaction_id),
+                    tx_ref: response.tx_ref || txRef
+                };
+                savePending(pending);
+
+                if (sendControl(pending)) {
+                    setUpgradeMessage('Payment received. Confirming with your PC…');
+                } else {
+                    setUpgradeMessage('Payment received. Connect to your PC and the unlock will finish automatically.');
+                }
+            }
+
+            /* ---------- QR scanning ---------- */
+
+            async function disposeScanner(instance) {
+                if (!instance) return;
+                try {
+                    if (instance.isScanning) await instance.stop();
+                } catch (_) { /* camera already stopped */ }
+                try {
+                    instance.clear();
+                } catch (_) { /* nothing to clear */ }
+            }
+
+            async function startScan() {
+                if (scanning) return;
+                if (typeof window.Html5Qrcode === 'undefined') {
+                    showMessage('The QR scanner could not load. Check your internet connection, or type the address.', true);
+                    return;
+                }
+
+                scanning = true;
+                els.card.classList.add('scanning');
+                els.scanPanel.hidden = false;
+                els.scanBtn.hidden = true;
+                els.stopScanBtn.hidden = false;
+                showMessage('Point the camera at the QR code.');
+
+                const instance = new Html5Qrcode('scannerView', { verbose: false });
+                scanner = instance;
+                try {
+                    await instance.start(
+                        { facingMode: 'environment' },
+                        { fps: 10, qrbox: { width: 180, height: 180 } },
+                        onScanSuccess,
+                        () => { /* frames without a code are normal */ }
+                    );
+                    // The user may have cancelled while the camera was starting.
+                    if (!scanning) await disposeScanner(instance);
+                } catch (err) {
+                    console.warn('Camera start failed', err);
+                    await stopScan();
+                    showMessage('Camera unavailable. Allow camera access and try again, or type the address.', true);
+                }
+            }
+
+            async function stopScan() {
+                scanning = false;
+                els.card.classList.remove('scanning');
+                els.scanPanel.hidden = true;
+                els.scanBtn.hidden = false;
+                els.stopScanBtn.hidden = true;
+                const active = scanner;
+                scanner = null;
+                await disposeScanner(active);
+            }
+
+            function onScanSuccess(decodedText) {
+                if (!scanning) return;
+                const target = parseServerAddress(decodedText);
+                if (!target) {
+                    showMessage('That QR code is not a gamepad address. Keep scanning.', true);
+                    return;
+                }
+                els.input.value = formatTarget(target);
+                stopScan().then(() => {
+                    showMessage(`Connecting to ${formatTarget(target)}`);
+                    openSession(target, 'manual');
+                });
+            }
+
+            /* ---------- Overlay controls ---------- */
+
+            els.connectBtn.addEventListener('click', () => {
+                const target = parseServerAddress(els.input.value);
+                if (!target) {
+                    showMessage('Enter an address like 192.168.1.50:5000, or scan the QR code.', true);
+                    return;
+                }
+                stopScan();
+                showMessage(`Connecting to ${formatTarget(target)}`);
+                openSession(target, 'manual');
+            });
+
+            els.input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') els.connectBtn.click();
+            });
+
+            els.scanBtn.addEventListener('click', startScan);
+            els.stopScanBtn.addEventListener('click', () => stopScan());
+
+            els.upgradeBtn.addEventListener('click', () => showUpgradeModal());
+
+            els.disconnectBtn.addEventListener('click', () => {
+                closeSession();
+                showMessage('Disconnected.');
+            });
+
+            els.backBtn.addEventListener('click', hideOverlay);
+
+            els.pill.addEventListener('click', () => showOverlay());
+
+            els.upgradeClose.addEventListener('click', hideUpgradeModal);
+
+            document.querySelectorAll('[data-buy]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const tier = btn.dataset.buy;
+                    initiateFlutterwavePayment(tier, PRICES[tier][DISPLAY_CURRENCY], DISPLAY_CURRENCY);
+                });
+            });
+
+            window.addEventListener('pagehide', closeSession);
+
+            // Public API for feature code, e.g. window.gamepadPro.requireFeature('gyro')
+            window.gamepadPro = {
+                requireFeature,
+                hasFeature,
+                getTier: () => license.tier,
+                openUpgrade: () => showUpgradeModal()
+            };
+
+            /* ---------- Startup: reconnect in the background, or show the connection screen ---------- */
+
+            function boot() {
+                updateUpgradeModal();
+                const saved = loadServer();
+                if (saved) {
+                    openSession(saved, 'startup');
+                } else {
+                    showOverlay('Scan the QR code on your PC, or type the address it shows.');
+                }
+            }
+
+            boot();
+        })();
+    </script>
+
+    <!-- Pro features: gyro aiming and macro studio -->
+    <script>
+        (() => {
+            'use strict';
+
+            /* ---------- Shared helpers ---------- */
+
+            const toastEl = document.getElementById('toast');
+            let toastTimer = null;
+
+            function toast(text, isError = false) {
+                toastEl.textContent = text;
+                toastEl.classList.toggle('is-error', isError);
+                toastEl.hidden = false;
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => { toastEl.hidden = true; }, 2600);
+            }
+
+            // Fails closed: a locked feature never runs. requireFeature shows the upgrade modal instead.
+            function gate(feature) {
+                return !!window.gamepadPro && window.gamepadPro.requireFeature(feature);
+            }
+
+            /* ---------- Gyroscope aiming (Pro) ---------- */
+
+            const GYRO_FULL_TILT_DEG = 30;  // tilt from the neutral pose that gives full stick deflection
+            const GYRO_DEADZONE = 0.04;     // ignores hand tremor
+            const GYRO_SMOOTHING = 0.35;    // 0..1, higher is snappier
+
+            const gyroBtn = document.getElementById('gyroBtn');
+            let gyroOn = false;
+            let gyroPending = false;        // true while the motion permission prompt is open
+            let gyroNeutral = null;         // pose captured on the first reading after enabling
+            let gyroSmooth = { x: 0, y: 0 };
+
+            // Shortest signed difference between two angles in degrees.
+            const wrapDelta = (value, reference) => ((value - reference + 540) % 360) - 180;
+
+            function screenAngle() {
+                const raw = (screen.orientation && typeof screen.orientation.angle === 'number')
+                    ? screen.orientation.angle
+                    : (window.orientation || 0);
+                return ((raw % 360) + 360) % 360;
+            }
+
+            // Returns the steering and pitch readings for the phone's current orientation.
+            // Portrait: steering uses gamma and pitch uses beta. Landscape: the axes swap.
+            function tiltAxes(event) {
+                const angle = screenAngle();
+                const landscape = angle === 90 || angle === 270;
+                let steer = landscape ? event.beta : event.gamma;
+                let pitch = landscape ? event.gamma : event.beta;
+                if (angle === 180 || angle === 270) {
+                    steer = -steer;
+                    pitch = -pitch;
+                }
+                return { steer, pitch };
+            }
+
+            function onOrientation(event) {
+                if (!gyroOn || event.beta == null || event.gamma == null) return;
+
+                const angle = screenAngle();
+                const { steer, pitch } = tiltAxes(event);
+
+                // The first reading after enabling (or after rotating the phone) becomes "centre".
+                if (!gyroNeutral || gyroNeutral.angle !== angle) {
+                    gyroNeutral = { steer, pitch, angle };
+                }
+
+                let x = wrapDelta(steer, gyroNeutral.steer) / GYRO_FULL_TILT_DEG;
+                let y = wrapDelta(pitch, gyroNeutral.pitch) / GYRO_FULL_TILT_DEG;
+                x = Math.max(-1, Math.min(1, x));
+                y = Math.max(-1, Math.min(1, y));
+                if (Math.abs(x) < GYRO_DEADZONE) x = 0;
+                if (Math.abs(y) < GYRO_DEADZONE) y = 0;
+
+                gyroSmooth = {
+                    x: gyroSmooth.x + (x - gyroSmooth.x) * GYRO_SMOOTHING,
+                    y: gyroSmooth.y + (y - gyroSmooth.y) * GYRO_SMOOTHING
+                };
+                window.gamepad.setMotion(gyroSmooth.x, gyroSmooth.y);
+            }
+
+            async function requestMotionAccess() {
+                const DOE = window.DeviceOrientationEvent;
+                if (!DOE) return false;
+                // iOS requires an explicit permission request from a user gesture.
+                if (typeof DOE.requestPermission === 'function') {
+                    try {
+                        return (await DOE.requestPermission()) === 'granted';
+                    } catch (_) {
+                        return false;
+                    }
+                }
+                return true; // Android and other browsers grant this without a prompt.
+            }
+
+            function setGyroUi() {
+                gyroBtn.setAttribute('aria-pressed', String(gyroOn));
+                gyroBtn.textContent = gyroOn ? 'Gyro on' : 'Gyro';
+            }
+
+            async function enableGyro() {
+                if (gyroPending) return;
+                if (!gate('gyro')) return;
+                if (!window.DeviceOrientationEvent) {
+                    toast('This device has no motion sensors.', true);
+                    return;
+                }
+
+                gyroPending = true;
+                const granted = await requestMotionAccess();
+                gyroPending = false;
+
+                if (!granted) {
+                    toast('Motion sensor access was denied.', true);
+                    return;
+                }
+
+                gyroOn = true;
+                gyroNeutral = null;
+                gyroSmooth = { x: 0, y: 0 };
+                window.addEventListener('deviceorientation', onOrientation);
+                setGyroUi();
+                toast('Gyro aim on. Hold the phone how you like, then tilt to aim.');
+            }
+
+            function disableGyro() {
+                gyroOn = false;
+                window.removeEventListener('deviceorientation', onOrientation);
+                gyroNeutral = null;
+                gyroSmooth = { x: 0, y: 0 };
+                window.gamepad.setMotion(0, 0);
+                setGyroUi();
+                toast('Gyro aim off.');
+            }
+
+            gyroBtn.addEventListener('click', () => {
+                if (gyroOn) disableGyro();
+                else enableGyro();
+            });
+
+            // After the app returns from the background, re-centre on the next reading.
+            window.addEventListener('gamepadreset', () => {
+                gyroNeutral = null;
+                gyroSmooth = { x: 0, y: 0 };
+            });
+
+            /* ---------- Macro studio (Pro) ---------- */
+
+            const MACRO_KEY = 'mobileGamepad.macros';
+            const MACRO_BUTTONS = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'VIEW', 'MENU', 'XBOX',
+                'dpadUp', 'dpadDown', 'dpadLeft', 'dpadRight'];
+            const MAX_MACRO_EVENTS = 500;
+            const MAX_MACRO_MS = 60000;
+            const MAX_MACRO_NAME = 24;
+
+            const macroEls = {
+                openBtn: document.getElementById('macroBtn'),
+                overlay: document.getElementById('macroPanel'),
+                close: document.getElementById('macroClose'),
+                recordBtn: document.getElementById('macroRecordBtn'),
+                name: document.getElementById('macroName'),
+                saveBtn: document.getElementById('macroSaveBtn'),
+                discardBtn: document.getElementById('macroDiscardBtn'),
+                message: document.getElementById('macroMessage'),
+                list: document.getElementById('macroList'),
+                recPill: document.getElementById('recPill'),
+                recStop: document.getElementById('recStopBtn')
+            };
+
+            let recording = null;   // { startedAt, events, held: Set, timer }
+            let draft = null;       // { events, durationMs } waiting to be named and saved
+            let playbackTimers = [];
+
+            function showMacroMessage(text, isError = false) {
+                macroEls.message.textContent = text;
+                macroEls.message.classList.toggle('is-error', isError);
+            }
+
+            function isValidEvent(ev) {
+                return !!ev && MACRO_BUTTONS.includes(ev.button) && typeof ev.pressed === 'boolean'
+                    && Number.isFinite(ev.t) && ev.t >= 0;
+            }
+
+            function loadMacros() {
+                try {
+                    const data = JSON.parse(localStorage.getItem(MACRO_KEY) || '[]');
+                    if (!Array.isArray(data)) return [];
+                    return data.filter((m) => m && typeof m.name === 'string'
+                        && Array.isArray(m.events) && m.events.every(isValidEvent));
+                } catch (_) {
+                    return [];
+                }
+            }
+
+            function storeMacros(list) {
+                try {
+                    localStorage.setItem(MACRO_KEY, JSON.stringify(list));
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            function renderMacroList() {
+                const list = loadMacros();
+                macroEls.list.textContent = '';
+
+                if (!list.length) {
+                    const empty = document.createElement('p');
+                    empty.className = 'conn-hint';
+                    empty.textContent = 'No saved macros yet. Record one to get started.';
+                    macroEls.list.appendChild(empty);
+                    return;
+                }
+
+                list.forEach((macro) => {
+                    const row = document.createElement('div');
+                    row.className = 'macro-item';
+
+                    const info = document.createElement('div');
+                    info.className = 'macro-info';
+
+                    const name = document.createElement('div');
+                    name.className = 'macro-name';
+                    name.textContent = macro.name;
+
+                    const presses = macro.events.filter((ev) => ev.pressed).length;
+                    const seconds = ((macro.durationMs || 0) / 1000).toFixed(1);
+                    const meta = document.createElement('div');
+                    meta.className = 'macro-meta';
+                    meta.textContent = `${presses} presses · ${seconds} s`;
+
+                    info.append(name, meta);
+
+                    const playBtn = document.createElement('button');
+                    playBtn.className = 'conn-btn primary';
+                    playBtn.type = 'button';
+                    playBtn.textContent = 'Play';
+                    playBtn.addEventListener('click', () => playMacro(macro.name));
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'conn-btn';
+                    deleteBtn.type = 'button';
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.addEventListener('click', () => {
+                        storeMacros(loadMacros().filter((m) => m.name !== macro.name));
+                        renderMacroList();
+                        toast(`Deleted "${macro.name}".`);
+                    });
+
+                    row.append(info, playBtn, deleteBtn);
+                    macroEls.list.appendChild(row);
+                });
+            }
+
+            function openMacroPanel() {
+                if (!gate('macros')) return;
+                renderMacroList();
+                macroEls.overlay.hidden = false;
+            }
+
+            function startRecording() {
+                if (!gate('macros')) return;
+                if (recording) return;
+
+                stopPlayback();
+                draft = null;
+                recording = { startedAt: performance.now(), events: [], held: new Set(), timer: null };
+                recording.timer = setTimeout(stopRecording, MAX_MACRO_MS);
+
+                macroEls.overlay.hidden = true;
+                macroEls.recPill.hidden = false;
+                toast('Recording. Press buttons on the gamepad, then tap Stop.');
+            }
+
+            function stopRecording() {
+                if (!recording) return;
+                clearTimeout(recording.timer);
+
+                const endT = Math.round(performance.now() - recording.startedAt);
+                // Release anything still held, so a macro never leaves a button stuck on.
+                recording.held.forEach((name) => recording.events.push({ button: name, pressed: false, t: endT }));
+
+                const events = recording.events;
+                recording = null;
+                macroEls.recPill.hidden = true;
+
+                const presses = events.filter((ev) => ev.pressed).length;
+                if (presses === 0) {
+                    draft = null;
+                    showMacroMessage('Nothing was recorded. Press some buttons while recording.', true);
+                } else {
+                    draft = { events, durationMs: endT };
+                    if (!macroEls.name.value.trim()) {
+                        macroEls.name.value = `Combo ${loadMacros().length + 1}`;
+                    }
+                    showMacroMessage(`Recorded ${presses} presses in ${(endT / 1000).toFixed(1)} s. Name it and tap Save.`);
+                }
+
+                renderMacroList();
+                macroEls.overlay.hidden = false;
+            }
+
+            function saveDraft() {
+                if (!draft) {
+                    showMacroMessage('Record a macro first.', true);
+                    return;
+                }
+                const name = macroEls.name.value.trim();
+                if (!name) {
+                    showMacroMessage('Give the macro a name.', true);
+                    return;
+                }
+                if (name.length > MAX_MACRO_NAME) {
+                    showMacroMessage(`Keep the name to ${MAX_MACRO_NAME} characters.`, true);
+                    return;
+                }
+
+                // Saving under an existing name replaces that macro.
+                const list = loadMacros().filter((m) => m.name !== name);
+                list.push({ name, events: draft.events, durationMs: draft.durationMs, savedAt: Date.now() });
+
+                if (!storeMacros(list)) {
+                    showMacroMessage('Could not save on this device. Check available storage.', true);
+                    return;
+                }
+
+                draft = null;
+                macroEls.name.value = '';
+                showMacroMessage(`Saved "${name}".`);
+                renderMacroList();
+            }
+
+            function stopPlayback() {
+                playbackTimers.forEach((id) => clearTimeout(id));
+                playbackTimers = [];
+                window.gamepad.clearVirtualButtons();
+            }
+
+            function playMacro(name) {
+                if (!gate('macros')) return;
+                if (recording) {
+                    toast('Stop recording before playing a macro.', true);
+                    return;
+                }
+
+                const macro = loadMacros().find((m) => m.name === name);
+                if (!macro) {
+                    toast(`Macro "${name}" was not found.`, true);
+                    return;
+                }
+
+                stopPlayback();
+                macro.events.forEach((ev) => {
+                    playbackTimers.push(setTimeout(() => {
+                        window.gamepad.setVirtualButton(ev.button, ev.pressed);
+                    }, ev.t));
+                });
+
+                // Clear the timer list once the last event has fired.
+                const endT = macro.events.reduce((max, ev) => Math.max(max, ev.t), 0);
+                playbackTimers.push(setTimeout(() => { playbackTimers = []; }, endT + 50));
+
+                toast(`Playing "${name}"`);
+            }
+
+            // Record physical button presses only. Macro playback arrives through setVirtualButton.
+            window.addEventListener('gamepadbutton', (e) => {
+                if (!recording) return;
+                const { name, pressed } = e.detail;
+                if (!MACRO_BUTTONS.includes(name)) return;
+
+                if (recording.events.length >= MAX_MACRO_EVENTS) {
+                    toast('Macro is full. Recording stopped.', true);
+                    stopRecording();
+                    return;
+                }
+
+                const t = Math.round(performance.now() - recording.startedAt);
+                recording.events.push({ button: name, pressed, t });
+                if (pressed) recording.held.add(name);
+                else recording.held.delete(name);
+            });
+
+            // If the app goes to the background, stop recording and playback.
+            window.addEventListener('gamepadreset', () => {
+                if (recording) stopRecording();
+                stopPlayback();
+            });
+
+            macroEls.openBtn.addEventListener('click', openMacroPanel);
+            macroEls.close.addEventListener('click', () => { macroEls.overlay.hidden = true; });
+            macroEls.recordBtn.addEventListener('click', startRecording);
+            macroEls.recStop.addEventListener('click', stopRecording);
+            macroEls.saveBtn.addEventListener('click', saveDraft);
+            macroEls.discardBtn.addEventListener('click', () => {
+                draft = null;
+                macroEls.name.value = '';
+                showMacroMessage('Recording discarded.');
+            });
+        })();
+    </script>
+
+    <!-- Touch layout editor -->
+    <script>
+        (() => {
+            'use strict';
+
+            const STORAGE_KEY = 'mobileGamepad.layout';
+            const MIN_SCALE = 0.6;
+            const MAX_SCALE = 1.8;
+            const SCALE_STEP = 0.05;
+            const MAX_OFFSET_VW = 40;   // how far a control may move from its default position
+            const MAX_OFFSET_VH = 40;
+            const DRAG_THRESHOLD_PX = 4;
+
+            const $ = (id) => document.getElementById(id);
+            const barEl = $('layoutBar');
+            const nameEl = $('layoutName');
+            const sizeEl = $('layoutSize');
+            const editBtn = $('layoutBtn');
+            const smallerBtn = $('layoutSmaller');
+            const biggerBtn = $('layoutBigger');
+            const resetOneBtn = $('layoutResetOne');
+            const resetAllBtn = $('layoutResetAll');
+            const doneBtn = $('layoutDone');
+
+            const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+            const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback);
+            const round2 = (v) => Math.round(v * 100) / 100;
+
+            // Every physical control: the gamepad buttons and both analog sticks.
+            const units = () => Array.from(document.querySelectorAll('[data-btn], [data-stick]'));
+            const unitId = (el) => (el.dataset.btn ? `btn:${el.dataset.btn}` : `stick:${el.dataset.stick}`);
+            const unitLabel = (el) => el.getAttribute('aria-label') || el.dataset.btn || el.dataset.stick;
+            const hitUnit = (target) => (target && target.closest ? target.closest('[data-btn], [data-stick]') : null);
+            const inBar = (target) => !!(target && target.closest && target.closest('#layoutBar'));
+            const findTouch = (list, id) => {
+                for (let i = 0; i < list.length; i++) {
+                    if (list[i].identifier === id) return list[i];
+                }
+                return null;
+            };
+
+            /* ---------- Saved layout ---------- */
+
+            function loadLayout() {
+                const out = {};
+                try {
+                    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                    if (!raw || typeof raw !== 'object') return out;
+                    for (const [id, cfg] of Object.entries(raw)) {
+                        if (!cfg || typeof cfg !== 'object') continue;
+                        out[id] = {
+                            x: clamp(num(cfg.x, 0), -MAX_OFFSET_VW, MAX_OFFSET_VW),
+                            y: clamp(num(cfg.y, 0), -MAX_OFFSET_VH, MAX_OFFSET_VH),
+                            s: clamp(num(cfg.s, 1), MIN_SCALE, MAX_SCALE)
+                        };
+                    }
+                } catch (_) {
+                    // Corrupt storage: start from the default layout.
+                }
+                return out;
+            }
+
+            let layout = loadLayout();
+
+            function saveLayout() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+                } catch (_) {
+                    // Storage unavailable: the layout still works for this session.
+                }
+            }
+
+            const cfgFor = (id) => layout[id] || { x: 0, y: 0, s: 1 };
+
+            // Uses the individual CSS translate and scale properties. They combine with the
+            // existing press animation (transform), so pressing still works.
+            function applyUnit(el) {
+                const cfg = cfgFor(unitId(el));
+                el.style.translate = `${cfg.x}vw ${cfg.y}vh`;
+                el.style.scale = String(cfg.s);
+            }
+
+            const applyAll = () => units().forEach(applyUnit);
+
+            function setCfg(el, patch) {
+                const id = unitId(el);
+                const next = { ...cfgFor(id), ...patch };
+                next.x = clamp(round2(next.x), -MAX_OFFSET_VW, MAX_OFFSET_VW);
+                next.y = clamp(round2(next.y), -MAX_OFFSET_VH, MAX_OFFSET_VH);
+                next.s = clamp(round2(next.s), MIN_SCALE, MAX_SCALE);
+                if (next.x === 0 && next.y === 0 && next.s === 1) {
+                    delete layout[id];
+                } else {
+                    layout[id] = next;
+                }
+                applyUnit(el);
+                saveLayout();
+            }
+
+            /* ---------- Editor state ---------- */
+
+            let editing = false;
+            let selected = null;
+            let drag = null; // { el, id, startX, startY, start, moved }
+
+            function refreshBar() {
+                const has = !!selected;
+                sizeEl.disabled = smallerBtn.disabled = biggerBtn.disabled = resetOneBtn.disabled = !has;
+                if (!has) {
+                    nameEl.textContent = 'Tap a button, then drag it.';
+                    return;
+                }
+                const cfg = cfgFor(unitId(selected));
+                nameEl.textContent = unitLabel(selected);
+                sizeEl.value = String(Math.round(cfg.s * 100));
+            }
+
+            function select(el) {
+                if (selected) selected.classList.remove('layout-selected');
+                selected = el || null;
+                if (selected) selected.classList.add('layout-selected');
+                refreshBar();
+            }
+
+            function setEditing(on) {
+                editing = on;
+                document.body.classList.toggle('layout-editing', on);
+                barEl.hidden = !on;
+                editBtn.hidden = on;
+                if (!on) {
+                    drag = null;
+                    select(null);
+                }
+                refreshBar();
+            }
+
+            /* ---------- Dragging ---------- */
+
+            function beginDrag(el, id, clientX, clientY) {
+                select(el);
+                drag = {
+                    el,
+                    id,
+                    startX: clientX,
+                    startY: clientY,
+                    start: { ...cfgFor(unitId(el)) },
+                    moved: false
+                };
+            }
+
+            function moveDrag(clientX, clientY) {
+                if (!drag) return;
+                const dx = clientX - drag.startX;
+                const dy = clientY - drag.startY;
+                if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+                drag.moved = true;
+                setCfg(drag.el, {
+                    x: drag.start.x + (dx / window.innerWidth) * 100,
+                    y: drag.start.y + (dy / window.innerHeight) * 100
+                });
+            }
+
+            // Capture-phase listeners run before the buttons and sticks, so while editing
+            // a touch moves a control and never presses it.
+            const captureTouch = { capture: true, passive: false };
+
+            window.addEventListener('touchstart', (e) => {
+                if (!editing || inBar(e.target)) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const el = hitUnit(e.target);
+                if (!el || drag) return; // one control is moved at a time
+                const touch = e.changedTouches[0];
+                beginDrag(el, touch.identifier, touch.clientX, touch.clientY);
+            }, captureTouch);
+
+            window.addEventListener('touchmove', (e) => {
+                if (!editing || inBar(e.target)) return;
+                e.preventDefault();
+                e.stopPropagation();
+                if (!drag) return;
+                const touch = findTouch(e.changedTouches, drag.id);
+                if (touch) moveDrag(touch.clientX, touch.clientY);
+            }, captureTouch);
+
+            const endTouch = (e) => {
+                if (!editing || inBar(e.target)) return;
+                e.preventDefault();
+                e.stopPropagation();
+                if (drag && findTouch(e.changedTouches, drag.id)) drag = null;
+            };
+            window.addEventListener('touchend', endTouch, captureTouch);
+            window.addEventListener('touchcancel', endTouch, captureTouch);
+
+            // Mouse support for desktop testing.
+            window.addEventListener('mousedown', (e) => {
+                if (!editing || inBar(e.target) || e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const el = hitUnit(e.target);
+                if (el && !drag) beginDrag(el, 'mouse', e.clientX, e.clientY);
+            }, true);
+
+            window.addEventListener('mousemove', (e) => {
+                if (editing && drag && drag.id === 'mouse') moveDrag(e.clientX, e.clientY);
+            }, true);
+
+            window.addEventListener('mouseup', () => {
+                if (drag && drag.id === 'mouse') drag = null;
+            }, true);
+
+            /* ---------- Bar controls ---------- */
+
+            sizeEl.addEventListener('input', () => {
+                if (selected) setCfg(selected, { s: Number(sizeEl.value) / 100 });
+            });
+
+            function nudgeSize(delta) {
+                if (!selected) return;
+                setCfg(selected, { s: cfgFor(unitId(selected)).s + delta });
+                refreshBar();
+            }
+
+            smallerBtn.addEventListener('click', () => nudgeSize(-SCALE_STEP));
+            biggerBtn.addEventListener('click', () => nudgeSize(SCALE_STEP));
+
+            resetOneBtn.addEventListener('click', () => {
+                if (!selected) return;
+                setCfg(selected, { x: 0, y: 0, s: 1 });
+                refreshBar();
+            });
+
+            resetAllBtn.addEventListener('click', () => {
+                layout = {};
+                saveLayout();
+                applyAll();
+                refreshBar();
+            });
+
+            editBtn.addEventListener('click', () => setEditing(true));
+            doneBtn.addEventListener('click', () => setEditing(false));
+
+            /* ---------- Startup ---------- */
+
+            applyAll();
+            setEditing(false);
+        })();
+    </script>
+
+    <!-- Haptic feedback and shot power meter -->
+    <script>
+        (() => {
+            'use strict';
+
+            /* ---------- Haptics ---------- */
+
+            function triggerHaptic(duration = 20) {
+                try {
+                    if (navigator.vibrate) navigator.vibrate(duration);
+                } catch (_) { /* vibration not supported on this device */ }
+            }
+
+            // Vibrate on every button press: gamepad buttons, D-pad, VIEW/MENU, Xbox, and app buttons.
+            document.addEventListener('pointerdown', (e) => {
+                if (e.target && e.target.closest && e.target.closest('button')) triggerHaptic(20);
+            }, true);
+
+            /* ---------- Shot power meter ---------- */
+
+            // Face buttons that show a charge ring while held. Edit the letters or labels here.
+            const POWER_BUTTONS = { X: 'Shoot', A: 'Pass', B: 'Cross' };
+
+            // Time to reach 100 %. Match this to how long your game takes to reach full power.
+            const POWER_FULL_MS = 1000;
+
+            // A haptic tick every 20 % of the charge.
+            const TICK_STEPS = 5;
+
+            const charges = {};
+
+            function setupPowerRings() {
+                Object.keys(POWER_BUTTONS).forEach((name) => {
+                    const el = document.querySelector(`[data-btn="${name}"]`);
+                    if (!el || el.querySelector('.power-ring')) return;
+
+                    el.classList.add('has-power');
+
+                    const ring = document.createElement('span');
+                    ring.className = 'power-ring';
+
+                    const value = document.createElement('span');
+                    value.className = 'power-value';
+
+                    el.append(ring, value);
+                });
+            }
+
+            function startCharge(name) {
+                const el = document.querySelector(`[data-btn="${name}"]`);
+                if (!el || !el.classList.contains('has-power')) return;
+
+                stopCharge(name);
+
+                const ch = { el, startedAt: performance.now(), step: 0, raf: 0 };
+                charges[name] = ch;
+                el.classList.add('is-charging');
+                el.classList.remove('power-full');
+                el.style.setProperty('--power', '0');
+                ch.raf = requestAnimationFrame(() => updateCharge(name));
+            }
+
+            function updateCharge(name) {
+                const ch = charges[name];
+                if (!ch) return;
+
+                const p = Math.min(1, (performance.now() - ch.startedAt) / POWER_FULL_MS);
+                const pct = Math.round(p * 100);
+
+                ch.el.style.setProperty('--power', String(pct));
+                ch.el.querySelector('.power-value').textContent = `${pct}%`;
+
+                const step = Math.floor(p * TICK_STEPS);
+                if (step !== ch.step) {
+                    ch.step = step;
+                    triggerHaptic(8);
+                }
+
+                if (p >= 1) {
+                    ch.el.classList.add('power-full');
+                    return; // stays at 100 % until the button is released
+                }
+                ch.raf = requestAnimationFrame(() => updateCharge(name));
+            }
+
+            function stopCharge(name) {
+                const ch = charges[name];
+                if (!ch) return;
+
+                cancelAnimationFrame(ch.raf);
+                delete charges[name];
+
+                const p = Math.min(1, (performance.now() - ch.startedAt) / POWER_FULL_MS);
+                const power = Math.round(p * 100) / 100;
+
+                ch.el.classList.remove('is-charging', 'power-full');
+
+                // Lets game code read the final power: window.addEventListener('gamepadpower', ...)
+                window.dispatchEvent(new CustomEvent('gamepadpower', {
+                    detail: { name, action: POWER_BUTTONS[name], power }
+                }));
+
+                // Keep the final percentage visible briefly, then clear it.
+                const valueEl = ch.el.querySelector('.power-value');
+                setTimeout(() => {
+                    if (!ch.el.classList.contains('is-charging') && valueEl) valueEl.textContent = '';
+                }, 700);
+            }
+
+            window.addEventListener('gamepadbutton', (e) => {
+                const { name, pressed } = e.detail;
+                if (!POWER_BUTTONS[name]) return;
+                if (pressed) startCharge(name);
+                else stopCharge(name);
+            });
+
+            window.addEventListener('gamepadreset', () => {
+                Object.keys(charges).forEach((name) => stopCharge(name));
+            });
+
+            setupPowerRings();
+        })();
+    </script>
+
+</body>
+
+</html>
