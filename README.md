@@ -25,7 +25,7 @@ Powered by **WebSockets** for instant touch response and **ViGEmBus** for native
 ### 2. Android Client
 1. Install the `PrimePad.apk` from the latest release onto your phone.
 2. Ensure both your PC and Android phone are on the **same Wi-Fi network**.
-3. Open PrimePad on your phone, enter your PC's local IP address, and press **Connect**.
+3. Open PrimePad on your phone, enter your PC's local IP address, or scan the qrcode from your PrimePad server on your pc and press **Connect**.
 
 ---
 
