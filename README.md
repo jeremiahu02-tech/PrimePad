@@ -1,4 +1,4 @@
-# 🎮 PrimePad — Android-to-PC Virtual Gamepad
+# 🎮 PrimePad | Android-to-PC Virtual Gamepad
 
 **PrimePad** is a zero-cost, ultra-low latency utility that turns your Android phone into a full Xbox 360 controller for PC gaming over local Wi-Fi. 
 
