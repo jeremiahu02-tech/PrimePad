@@ -39,3 +39,6 @@ Powered by **WebSockets** for instant touch response and **ViGEmBus** for native
 ## 🤝 Contributing & Feedback
 
 Got ideas for touch layouts or latency optimizations? Open an issue or submit a pull request!
+
+### Note:
+Windows SmartScreen might show a "Publisher Unknown" warning because this is an open-source tool. Just click "Keep anyway" and "Run anyway" to install!
